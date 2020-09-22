@@ -25,7 +25,7 @@ class Episode:
         self.date = datetime.strptime(episode['startDate'][0:10], '%Y-%m-%d')
         self.stream_url = episode['streamUrl']
         self.title = episode['title']
-        self.title_with_date = episode['titleWithDate']
+        self.title_with_date = f'{self.title} ({episode["startDate"][0:10]})'
 
     def __str__(self):
         return f'Episode{{id:"{self.id}", date:"{self.date}", start_date:"{self.start_date}", ' \
@@ -41,9 +41,16 @@ class Download:
         return f'Download{{file:"{self.file_name}", date:"{self.date}"}}'
 
 
-def _get_channel_catchup_response():
+def _get_show_catchup_url():
+    if show_config['station_catchup_url'].endswith("/"):
+        return show_config['station_catchup_url'] + show_config['show_id']
+    else:
+        return show_config['station_catchup_url'] + "/" + show_config['show_id']
+
+
+def _get_show_catchup_response():
     verbose('Calling channel catchup endpoint...')
-    response = request.urlopen(show_config['station_catchup_url']).read().decode('utf-8')
+    response = request.urlopen(_get_show_catchup_url()).read().decode('utf-8')
     return json.loads(response)
 
 
@@ -56,13 +63,9 @@ def _read_catchup_response_from_file():
 
 def _get_show_response():
     if args.with_fake_response:
-        channel_response = _read_catchup_response_from_file()
+        return _read_catchup_response_from_file()
     else:
-        channel_response = _get_channel_catchup_response()
-
-    for show in channel_response:
-        if show['showId'] == show_config['show_id']:
-            return show
+        return _get_show_catchup_response()
 
 
 def _get_file_format():
